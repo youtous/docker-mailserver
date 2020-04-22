@@ -25,6 +25,9 @@ ENV POSTGREY_TEXT="Delayed by postgrey"
 ENV SASLAUTHD_MECHANISMS=pam
 ENV SASLAUTHD_MECH_OPTIONS=""
 
+# A process must be running at least "startsecs" to be considered as RUNNING
+ENV SUPERVISOR_DEFAULT_STARTSECS=60
+
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Packages
