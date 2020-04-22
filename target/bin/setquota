@@ -1,0 +1,13 @@
+#! /bin/bash
+
+DATABASE=${DATABASE:-/tmp/docker-mailserver/dovecot-quotas.cf}
+
+USER="$1"
+shift
+QUOTA="$@"
+
+usage() {
+	echo "Usage: setquota <user@domain> [<quota>]"
+}
+
+delquota "$USER" && addquota "$USER" "$QUOTA"

@@ -27,13 +27,13 @@ touch $DATABASE
 (
   flock -e 200
 
-  grep -qi "^$(escape "$USER")|" $DATABASE 2>/dev/null &&
+  grep -qi "^$(escape "$USER"):" $DATABASE 2>/dev/null &&
     errex "Quota for \"$USER\" already exists"
 
   if [ -z "$QUOTA" ]; then
-    read -s -p "Enter quota: " QUOTA
+    read -s "Enter quota: " QUOTA
     echo
-    [ -z "$QUOTA" ] && errex "Quota must not be empty, use 0 for unlimited quota"
+    [ -z "$QUOTA" ] && errex "Quota must not be empty. Use 0 for unlimited quota"
   fi
 
   echo "$USER:$QUOTA" >> $DATABASE
