@@ -7,7 +7,15 @@ shift
 QUOTA="$@"
 
 usage() {
-	echo "Usage: setquota <user@domain> [<quota>]"
+	echo "Usage: setquota <user@domain> <quota>"
 }
+
+errex() {
+	echo "$@" 1>&2
+	exit 1
+}
+
+[ -z "$USER" ] && { usage; errex "no username specified"; }
+[ -z "$QUOTA" ] && { usage; errex "no quota specified"; }
 
 delquota "$USER" && addquota "$USER" "$QUOTA"
