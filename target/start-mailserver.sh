@@ -699,7 +699,7 @@ function _setup_dovecot_local_user() {
 			# test if user has a defined quota
 			user_quota=($(grep "${user}@${domain}:" -i /etc/dovecot/dovecot-quotas.cf | tr ':' '\n'))
 			if [ ${#user_quota[@]} -eq 2 ]; then
-			  user_attributes="userdb_quota_rule=*:bytes=${user_attributes}${#user_quota[2]}"
+			  user_attributes="${user_attributes}userdb_quota_rule=*:bytes=${user_quota[1]}"
 			fi
 
 			# Let's go!

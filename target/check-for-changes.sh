@@ -32,7 +32,7 @@ echo "${log_date} Using postmaster address ${PM_ADDRESS}"
 
 # Create an array of files to monitor, must be the same as in start-mailserver.sh
 declare -a cf_files=()
-for file in postfix-accounts.cf postfix-virtual.cf postfix-aliases.cf; do
+for file in postfix-accounts.cf postfix-virtual.cf postfix-aliases.cf dovecot-quotas.cf; do
   [ -f "$file" ] && cf_files+=("$file")
 done
 
@@ -124,7 +124,7 @@ if [[ $chksum == *"FAIL"* ]]; then
 			# test if user has a defined quota
 			user_quota=($(grep "${user}@${domain}:" -i /etc/dovecot/dovecot-quotas.cf | tr ':' '\n'))
 			if [ ${#user_quota[@]} -eq 2 ]; then
-			  user_attributes="userdb_quota_rule=*:bytes=${user_attributes}${#user_quota[2]}"
+			  user_attributes="${user_attributes}userdb_quota_rule=*:bytes=${user_quota[1]}"
 			fi
 
 			# Let's go!
