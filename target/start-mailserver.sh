@@ -99,6 +99,7 @@ function register_functions() {
 	if [ "$SMTP_ONLY" != 1 ]; then
 		_register_setup_function "_setup_dovecot"
                 _register_setup_function "_setup_dovecot_dhparam"
+		_register_setup_function "_setup_dovecot_quota"
 		_register_setup_function "_setup_dovecot_local_user"
 	fi
 
@@ -630,6 +631,38 @@ function _setup_dovecot() {
 	chmod -f +x /usr/lib/dovecot/sieve-pipe/*
 }
 
+function _setup_dovecot_quota() {
+    notify 'task' 'Setting up Dovecot quota'
+
+    if [ "$ENABLE_LDAP" = 1 ]; then
+      notify 'inf' "Dovecot quota are not implemented with LDAP."
+
+      if [ -f /etc/dovecot/conf.d/12-quotas.conf ]; then
+        mv /etc/dovecot/conf.d/12-quotas.conf /etc/dovecot/conf.d/12-quotas.conf.disab
+      fi
+    else
+      if [ -f /etc/dovecot/conf.d/12-quotas.conf.disab ]; then
+        mv /etc/dovecot/conf.d/12-quotas.conf.disab /etc/dovecot/conf.d/12-quotas.conf
+      fi
+
+      message_size_limit_mb=$((DEFAULT_VARS["POSTFIX_MESSAGE_SIZE_LIMIT"] / 1000000))
+      mailbox_limit_mb=$((DEFAULT_VARS["POSTFIX_MAILBOX_SIZE_LIMIT"] / 1000000))
+
+      sed -i "s/    quota_max_mail_size =.*/    quota_max_mail_size = ${message_size_limit_mb}M/g" /etc/dovecot/conf.d/12-quotas.conf
+      sed -i "s/    quota_rule = \*:storage=.*/    quota_rule = *:storage=${mailbox_limit_mb}M/g" /etc/dovecot/conf.d/12-quotas.conf
+
+      if [ -f /tmp/docker-mailserver/dovecot-quotas.cf ]; then
+        notify 'inf' "'config/docker-mailserver/dovecot-quotas.cf' is not provided. Using default quotas."
+        touch /etc/dovecot/dovecot-quotas.cf
+      else
+        cp /tmp/docker-mailserver/dovecot-quotas.cf /etc/dovecot/dovecot-quotas.cf
+      fi
+
+      chown dovecot:dovecot /etc/dovecot/dovecot-quotas.cf
+		  chmod 640 /etc/dovecot/dovecot-quotas.cf
+    fi
+}
+
 function _setup_dovecot_local_user() {
 	notify 'task' 'Setting up Dovecot Local User'
 	echo -n > /etc/postfix/vmailbox
@@ -657,15 +690,25 @@ function _setup_dovecot_local_user() {
 			# Setting variables for better readability
 			user=$(echo ${login} | cut -d @ -f1)
 			domain=$(echo ${login} | cut -d @ -f2)
+
+			user_attributes=""
+			# test if user has a defined quota
+			user_quota=($(grep "${user}@${domain}:" -i /etc/dovecot/dovecot-quotas.cf | tr ':' '\n'))
+			if [ ${#user_quota[@]} -eq 2 ]; then
+			  user_attributes="userdb_quota_rule=*:bytes=${user_attributes}${#user_quota[2]}"
+			fi
+
 			# Let's go!
-			notify 'inf' "user '${user}' for domain '${domain}' with password '********'"
+			notify 'inf' "user '${user}' for domain '${domain}' with password '********', attr=${user_attributes}"
+
 			echo "${login} ${domain}/${user}/" >> /etc/postfix/vmailbox
 			# User database for dovecot has the following format:
 			# user:password:uid:gid:(gecos):home:(shell):extra_fields
 			# Example :
 			# ${login}:${pass}:5000:5000::/var/mail/${domain}/${user}::userdb_mail=maildir:/var/mail/${domain}/${user}
-			echo "${login}:${pass}:5000:5000::/var/mail/${domain}/${user}::" >> /etc/dovecot/userdb
+			echo "${login}:${pass}:5000:5000::/var/mail/${domain}/${user}::${user_attributes}" >> /etc/dovecot/userdb
 			mkdir -p /var/mail/${domain}/${user}
+
 			# Copy user provided sieve file, if present
 			test -e /tmp/docker-mailserver/${login}.dovecot.sieve && cp /tmp/docker-mailserver/${login}.dovecot.sieve /var/mail/${domain}/${user}/.dovecot.sieve
 			echo ${domain} >> /tmp/vhost.tmp

@@ -1,0 +1,23 @@
+#! /bin/bash
+
+DATABASE=${DATABASE:-/tmp/docker-mailserver/dovecot-quotas.cf}
+
+USER="$1"
+
+usage() {
+	echo "Usage: delquota <username@domain>"
+}
+
+errex() {
+	echo "$@" 1>&2
+	exit 1
+}
+
+escape() {
+	echo "${1//./\\.}"
+}
+
+[ -z "$USER" ]  && { usage; errex "No username specified"; }
+[ -s "$DATABASE" ] || exit 0
+
+sed -i -e "/^$USER:.*$/d" $DATABASE
