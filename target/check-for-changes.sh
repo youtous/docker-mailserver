@@ -122,14 +122,12 @@ if [[ $chksum == *"FAIL"* ]]; then
 
 			user_attributes=""
 			# test if user has a defined quota
-			user_quota=($(grep "${user}@${domain}:" -i /etc/dovecot/dovecot-quotas.cf | tr ':' '\n'))
+			user_quota=($(grep "${user}@${domain}:" -i /tmp/docker-mailserver/dovecot-quotas.cf | tr ':' '\n'))
 			if [ ${#user_quota[@]} -eq 2 ]; then
 			  user_attributes="${user_attributes}userdb_quota_rule=*:bytes=${user_quota[1]}"
 			fi
 
 			# Let's go!
-			notify 'inf' "user '${user}' for domain '${domain}' with password '********', attr=${user_attributes}"
-
 			echo "${login} ${domain}/${user}/" >> /etc/postfix/vmailbox
 			# User database for dovecot has the following format:
 			# user:password:uid:gid:(gecos):home:(shell):extra_fields

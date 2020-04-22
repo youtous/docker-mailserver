@@ -652,18 +652,12 @@ function _setup_dovecot_quota() {
       message_size_limit_mb=$((DEFAULT_VARS["POSTFIX_MESSAGE_SIZE_LIMIT"] / 1000000))
       mailbox_limit_mb=$((DEFAULT_VARS["POSTFIX_MAILBOX_SIZE_LIMIT"] / 1000000))
 
-      sed -i "s/    quota_max_mail_size =.*/    quota_max_mail_size = ${message_size_limit_mb}M/g" /etc/dovecot/conf.d/90-quota.conf
-      sed -i "s/    quota_rule = \*:storage=.*/    quota_rule = *:storage=${mailbox_limit_mb}M/g" /etc/dovecot/conf.d/90-quota.conf
+      sed -i "s/    quota_max_mail_size =.*/    quota_max_mail_size = ${message_size_limit_mb}$([ "$message_size_limit_mb" == 0 ] && echo "" || echo "M")/g" /etc/dovecot/conf.d/90-quota.conf
+      sed -i "s/    quota_rule = \*:storage=.*/    quota_rule = *:storage=${mailbox_limit_mb}$([ "$mailbox_limit_mb" == 0 ] && echo "" || echo "M")/g" /etc/dovecot/conf.d/90-quota.conf
 
-      if [ -f /tmp/docker-mailserver/dovecot-quotas.cf ]; then
-        cp /tmp/docker-mailserver/dovecot-quotas.cf /etc/dovecot/dovecot-quotas.cf
-      else
+      if [ ! -f /tmp/docker-mailserver/dovecot-quotas.cf ]; then
         notify 'inf' "'config/docker-mailserver/dovecot-quotas.cf' is not provided. Using default quotas."
-        touch /etc/dovecot/dovecot-quotas.cf
       fi
-
-      chown dovecot:dovecot /etc/dovecot/dovecot-quotas.cf
-		  chmod 640 /etc/dovecot/dovecot-quotas.cf
     fi
 }
 
@@ -697,7 +691,7 @@ function _setup_dovecot_local_user() {
 
 			user_attributes=""
 			# test if user has a defined quota
-			user_quota=($(grep "${user}@${domain}:" -i /etc/dovecot/dovecot-quotas.cf | tr ':' '\n'))
+			user_quota=($(grep "${user}@${domain}:" -i /tmp/docker-mailserver/dovecot-quotas.cf | tr ':' '\n'))
 			if [ ${#user_quota[@]} -eq 2 ]; then
 			  user_attributes="${user_attributes}userdb_quota_rule=*:bytes=${user_quota[1]}"
 			fi
