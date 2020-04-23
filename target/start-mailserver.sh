@@ -649,8 +649,8 @@ function _setup_dovecot_quota() {
         sed -i "s/mail_plugins = \$mail_plugin/mail_plugins = \$mail_plugins imap_quota/g" /etc/dovecot/conf.d/20-imap.conf
       fi
 
-      message_size_limit_mb=$(($POSTFIX_MESSAGE_SIZE_LIMIT / 1000000))
-      mailbox_limit_mb=$(($POSTFIX_MAILBOX_SIZE_LIMIT / 1000000))
+      message_size_limit_mb=$((${DEFAULT_VARS["$POSTFIX_MESSAGE_SIZE_LIMIT"]} / 1000000))
+      mailbox_limit_mb=$((${DEFAULT_VARS["POSTFIX_MAILBOX_SIZE_LIMIT"]} / 1000000))
 
       sed -i "s/quota_max_mail_size =.*/quota_max_mail_size = ${message_size_limit_mb}$([ "$message_size_limit_mb" == 0 ] && echo "" || echo "M")/g" /etc/dovecot/conf.d/90-quota.conf
       sed -i "s/quota_rule = \*:storage=.*/quota_rule = *:storage=${mailbox_limit_mb}$([ "$mailbox_limit_mb" == 0 ] && echo "" || echo "M")/g" /etc/dovecot/conf.d/90-quota.conf
