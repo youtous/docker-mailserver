@@ -1085,13 +1085,13 @@ EOF
   run docker exec mail /bin/sh -c "setquota quser@domain.tld 12M"
   assert_success
 
-  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver-test/dovecot-quotas.cf | grep -E "^quser@domain.tld\:12M\$" | wc -l | grep 1'
+  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quser@domain.tld\:12M\$" | wc -l | grep 1'
   assert_success
 
   run docker exec mail /bin/sh -c "delmailuser -y quser@domain.tld"
   assert_success
 
-  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver-test/dovecot-quotas.cf | grep -E "^quser@domain.tld\:12M\$"'
+  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quser@domain.tld\:12M\$"'
   assert_failure
 }
 
