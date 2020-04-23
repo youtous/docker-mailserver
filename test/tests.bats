@@ -1058,21 +1058,21 @@ EOF
   assert_success
   sleep 5
   run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
-  assert_output "User quota STORAGE     0     -                         0"
+  assert_output --partial "User quota STORAGE     0     -                         0"
 
   # set a quota
-  run docker exec mail /bin/sh -c "setquota 50M fresh_quota_user@domain.tld"
+  run docker exec mail /bin/sh -c "setquota fresh_quota_user@domain.tld 50M"
   assert_success
   sleep 5
   run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
-  assert_output "User quota STORAGE     0 51200                         0"
+  assert_output --partial "User quota STORAGE     0 51200                         0"
 
   # remove the quota
   run docker exec mail /bin/sh -c "delquota fresh_quota_user@domain.tld"
   assert_success
   sleep 5
   run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
-  assert_output "User quota STORAGE     0     -                         0"
+  assert_output --partial "User quota STORAGE     0     -                         0"
 
   run docker exec mail /bin/sh -c "delmailuser -y fresh_quota_user@domain.tld"
   assert_success
@@ -1083,7 +1083,7 @@ EOF
   assert_success
 
   # set a small quota
-  run docker exec mail /bin/sh -c "setquota 10K userquotafull@localhost.localdomain"
+  run docker exec mail /bin/sh -c "setquota userquotafull@localhost.localdomain 10K"
   assert_success
   sleep 5
 
