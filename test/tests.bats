@@ -1035,7 +1035,7 @@ EOF
   run echo "$dovecot_mailbox_size"
   refute_output ""
 
-  assert_equals "$postfix_mailbox_size_mb" "$dovecot_mailbox_size_mb"
+  assert_equal "$postfix_mailbox_size_mb" "$dovecot_mailbox_size_mb"
 }
 
 
@@ -1050,7 +1050,7 @@ EOF
   run echo "$dovecot_message_size_mb"
   refute_output ""
 
-  assert_equals "$postfix_message_size_mb" "$dovecot_message_size_mb"
+  assert_equal "$postfix_message_size_mb" "$dovecot_message_size_mb"
 }
 
 @test "checking quota: dovecot apply user quota" {
@@ -1075,6 +1075,27 @@ EOF
   assert_output "User quota STORAGE     0     -                         0"
 
   run docker exec mail /bin/sh -c "delmailuser -y fresh_quota_user@domain.tld"
+  assert_success
+}
+
+@test "checking quota: mail received when quota exceeded" {
+  run docker exec mail /bin/sh -c "addmailuser userquotafull@localhost.localdomain mypassword"
+  assert_success
+
+  # set a small quota
+  run docker exec mail /bin/sh -c "setquota 10K userquotafull@localhost.localdomain"
+  assert_success
+
+  # send a big email
+  run  docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/quota-exceeded.txt"
+  assert_success
+
+  # check for quota warn message existence
+  run  docker exec mail /bin/sh -c "grep Subject /var/mail/localhost.localdomain/userquotafull/new/"
+  run docker exec mail grep "Subject: quota warning" /var/mail/localhost.localdomain/userquotafull/new/ -R
+  assert_success
+
+  run docker exec mail /bin/sh -c "delmailuser -y userquotafull@localhost.localdomain"
   assert_success
 }
 
