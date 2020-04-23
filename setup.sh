@@ -98,7 +98,7 @@ SUBCOMMANDS:
     $0 alias list
 
   quota:
-    $0 quota set <email> <quota>
+    $0 quota set <email> [<quota>]
     $0 quota del <email>
 
   config:

@@ -1,13 +1,14 @@
 #! /bin/bash
 
 DATABASE=${DATABASE:-/tmp/docker-mailserver/dovecot-quotas.cf}
+USER_DATABASE=${USER_DATABASE:-/tmp/docker-mailserver/postfix-accounts.cf}
 
 USER="$1"
 shift
 QUOTA="$@"
 
 usage() {
-	echo "Usage: setquota <user@domain> <quota>"
+	echo "Usage: setquota <user@domain> [<quota>]"
 }
 
 errex() {
@@ -16,6 +17,36 @@ errex() {
 }
 
 [ -z "$USER" ] && { usage; errex "no username specified"; }
-[ -z "$QUOTA" ] && { usage; errex "no quota specified"; }
+expr index "$USER" "@" >/dev/null || { usage; errex "username must include the domain"; }
+if ! grep -E "^$USER\|" "$USER_DATABASE"; then
+  usage; errex "$USER does not exist"
+fi
 
-delquota "$USER" && addquota "$USER" "$QUOTA"
+# check quota
+if [ -n "$QUOTA" ] && ! echo "$QUOTA" | grep -E "^([0-9]+(B|k|M|G|T)|0)\$"; then
+  usage; errex "invalid quota format. e.g. 302M (B (byte), k (kilobyte), M (megabyte), G (gigabyte) or T (terabyte))"
+fi
+
+# Protect config file with lock to avoid race conditions
+touch $DATABASE
+(
+  flock -e 200
+
+  grep -qi "^$(escape "$USER"):" $DATABASE 2>/dev/null &&
+    errex "Quota for \"$USER\" already exists"
+
+  if [ -z "$QUOTA" ]; then
+    read -s "Enter quota (e.g. 10M): " QUOTA
+    echo
+    [ -z "$QUOTA" ] && errex "Quota must not be empty. Use 0 for unlimited quota"
+  fi
+
+  # check quota
+  if [ -n "$QUOTA" ] && ! echo "$QUOTA" | grep -E "^([0-9]+(B|k|M|G|T)|0)\$"; then
+    usage; errex "invalid quota format. e.g. 302M (B (byte), k (kilobyte), M (megabyte), G (gigabyte) or T (terabyte))"
+  fi
+
+  delquota "$USER"
+  echo "$USER:$QUOTA" >> $DATABASE
+) 200<$DATABASE
+
