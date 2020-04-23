@@ -1210,20 +1210,20 @@ EOF
   run ./setup.sh -c mail email add quota_user@example.com test_password
   run ./setup.sh -c mail email add quota_user2@example.com test_password
 
-  run ./setup.sh -p ./test/quota/config setquota quota_user@example.com 12M
+  run ./setup.sh -p ./test/quota/config quota set quota_user@example.com 12M
   assert_success
-  run ./setup.sh -p ./test/quota/config setquota 51M quota_user@example.com
+  run ./setup.sh -p ./test/quota/config quota set 51M quota_user@example.com
   assert_failure
-  run ./setup.sh -p ./test/quota/config setquota unknown@domain.com 150M
+  run ./setup.sh -p ./test/quota/config quota set unknown@domain.com 150M
   assert_failure
 
-  run ./setup.sh -p ./test/quota/config setquota quota_user2 51M
+  run ./setup.sh -p ./test/quota/config quota set quota_user2 51M
   assert_failure
 
   run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
   assert_success
 
-  run ./setup.sh -p ./test/quota/config setquota quota_user@example.com 26M
+  run ./setup.sh -p ./test/quota/config quota set quota_user@example.com 26M
   assert_success
   run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:26M\$" | wc -l | grep 1'
   assert_success
@@ -1238,23 +1238,23 @@ EOF
   run ./setup.sh -c mail email add quota_user@example.com test_password
   run ./setup.sh -c mail email add quota_user2@example.com test_password
 
-  run ./setup.sh -p ./test/quota/config setquota quota_user@example.com 12M
+  run ./setup.sh -p ./test/quota/config quota set quota_user@example.com 12M
   assert_success
   run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
   assert_success
 
 
-  run ./setup.sh -p ./test/quota/config delquota unknown@domain.com
+  run ./setup.sh -p ./test/quota/config quota del unknown@domain.com
   assert_failure
   run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
   assert_success
 
-  run ./setup.sh -p ./test/quota/config delquota quota_user@example.com 26M
+  run ./setup.sh -p ./test/quota/config quota del quota_user@example.com 26M
   assert_failure
   run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
   assert_success
 
-  run ./setup.sh -p ./test/quota/config delquota quota_user@example.com
+  run ./setup.sh -p ./test/quota/config quota del quota_user@example.com
   assert_success
   run grep "quota_user@example.com" ./test/alias/config/dovecot-quotas.cf
   assert_failure
