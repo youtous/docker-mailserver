@@ -1032,7 +1032,7 @@ EOF
   postfix_mailbox_size_mb=$(($postfix_mailbox_size / 1000000))
 
   dovecot_mailbox_size_mb=$(docker exec mail sh -c "doveconf | grep  -oP '(?<=quota_rule \= \*\:storage=)[0-9]+'")
-  run echo "$dovecot_mailbox_size"
+  run echo "$dovecot_mailbox_size_mb"
   refute_output ""
 
   assert_equal "$postfix_mailbox_size_mb" "$dovecot_mailbox_size_mb"
@@ -1056,7 +1056,7 @@ EOF
 @test "checking quota: dovecot apply user quota" {
   run docker exec mail /bin/sh -c "addmailuser fresh_quota_user@domain.tld mypassword"
   assert_success
-  sleep 5
+  sleep 10
   run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
   assert_output --partial "User quota STORAGE     0     -                         0"
 
@@ -1083,7 +1083,7 @@ EOF
   assert_success
 
   # set a small quota
-  run docker exec mail /bin/sh -c "setquota userquotafull@localhost.localdomain 10K"
+  run docker exec mail /bin/sh -c "setquota userquotafull@localhost.localdomain 10k"
   assert_success
   sleep 5
 
@@ -1291,8 +1291,8 @@ EOF
 @test "checking setup.sh: setup.sh setquota" {
   mkdir -p ./test/quota/config && echo "" > ./test/quota/config/dovecot-quotas.cf
 
-  run ./setup.sh -c mail email add quota_user@example.com test_password
-  run ./setup.sh -c mail email add quota_user2@example.com test_password
+  run ./setup.sh -p ./test/quota/config -c mail email add quota_user@example.com test_password
+  run ./setup.sh -p ./test/quota/config -c mail email add quota_user2@example.com test_password
 
   run ./setup.sh -p ./test/quota/config quota set quota_user@example.com 12M
   assert_success
