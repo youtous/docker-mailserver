@@ -1054,50 +1054,52 @@ EOF
 }
 
 @test "checking quota: dovecot apply user quota" {
-  run docker exec mail /bin/sh -c "addmailuser quser@domain.tld mypassword"
+  run docker exec mail /bin/sh -c "addmailuser quserapply@domain.tld mypassword"
   assert_success
+  sleep 20
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'quser@domain.tld'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'quserapply@domain.tld'"
   assert_output --partial "User quota STORAGE     0     -                         0"
 
   # set a quota
-  run docker exec mail /bin/sh -c "setquota quser@domain.tld 50M"
+  run docker exec mail /bin/sh -c "setquota quserapply@domain.tld 50M"
   assert_success
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'quser@domain.tld'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'quserapply@domain.tld'"
   assert_output --partial "User quota STORAGE     0 51200                         0"
 
   # remove the quota
-  run docker exec mail /bin/sh -c "delquota quser@domain.tld"
+  run docker exec mail /bin/sh -c "delquota quserapply@domain.tld"
   assert_success
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'quser@domain.tld'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'quserapply@domain.tld'"
   assert_output --partial "User quota STORAGE     0     -                         0"
 
-  run docker exec mail /bin/sh -c "delmailuser -y quser@domain.tld"
+  run docker exec mail /bin/sh -c "delmailuser -y quserapply@domain.tld"
   assert_success
 }
 
 @test "checking quota: quota removed when mailbox is removed" {
-  run docker exec mail /bin/sh -c "addmailuser quser@domain.tld mypassword"
+  run docker exec mail /bin/sh -c "addmailuser quserremoved@domain.tld mypassword"
   assert_success
 
-  run docker exec mail /bin/sh -c "setquota quser@domain.tld 12M"
+  run docker exec mail /bin/sh -c "setquota quserremoved@domain.tld 12M"
   assert_success
 
-  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quser@domain.tld\:12M\$" | wc -l | grep 1'
+  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quserremoved@domain.tld\:12M\$" | wc -l | grep 1'
   assert_success
 
-  run docker exec mail /bin/sh -c "delmailuser -y quser@domain.tld"
+  run docker exec mail /bin/sh -c "delmailuser -y quserremoved@domain.tld"
   assert_success
 
-  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quser@domain.tld\:12M\$"'
+  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quserremoved@domain.tld\:12M\$"'
   assert_failure
 }
 
 @test "checking quota: mail received when quota exceeded" {
   run docker exec mail /bin/sh -c "addmailuser userquotafull@localhost.localdomain mypassword"
   assert_success
+  sleep 20
 
   # set a small quota
   run docker exec mail /bin/sh -c "setquota userquotafull@localhost.localdomain 10k"
