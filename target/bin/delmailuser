@@ -53,7 +53,9 @@ shift $((OPTIND-1))
         -e "s/"$USER",//g" $ALIAS_DATABASE
     [ $? = 0 ] && echo "$USER and potential aliases deleted." || errex "Aliases for $USER couldn't be deleted in $ALIAS_DATABASE. $?"
     # remove quota directives
-    sed -i -e "/^$USER:.*$/d" $QUOTA_DATABASE || errex "Quota for $USER couldn't be deleted in $QUOTA_DATABASE. $?"
+    if [ -f "$QUOTA_DATABASE" ]; then
+      sed -i -e "/^$USER:.*$/d" $QUOTA_DATABASE || errex "Quota for $USER couldn't be deleted in $QUOTA_DATABASE. $?"
+    fi
 
     if [ "$MAILDEL" != "y" ]; then
       read -p "Do you want to delete the mailbox as well(all mails will be removed)?(y/n) " MAILDEL
