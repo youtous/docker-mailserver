@@ -1029,6 +1029,10 @@ EOF
   run echo "$postfix_mailbox_size"
   refute_output ""
 
+  # dovecot relies on virtual_mailbox_size by default
+  postfix_virtual_mailbox_size=$(docker exec mail sh -c "postconf | grep -Po '(?<=virtual_mailbox_limit = )[0-9]+'")
+  assert_equal "$postfix_virtual_mailbox_size" "$postfix_mailbox_size"
+
   postfix_mailbox_size_mb=$(($postfix_mailbox_size / 1000000))
 
   dovecot_mailbox_size_mb=$(docker exec mail sh -c "doveconf | grep  -oP '(?<=quota_rule \= \*\:storage=)[0-9]+'")
