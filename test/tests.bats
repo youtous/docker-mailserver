@@ -1054,29 +1054,22 @@ EOF
 }
 
 @test "checking quota: dovecot apply user quota" {
-  run docker exec mail /bin/sh -c "addmailuser quserapply@domain.tld mypassword"
-  assert_success
-  sleep 20
-
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'quserapply@domain.tld'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain'"
   assert_output --partial "User quota STORAGE     0     -                         0"
 
   # set a quota
-  run docker exec mail /bin/sh -c "setquota quserapply@domain.tld 50M"
+  run docker exec mail /bin/sh -c "setquota user1@localhost.localdomain 50M"
   assert_success
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'quserapply@domain.tld'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain'"
   assert_output --partial "User quota STORAGE     0 51200                         0"
 
   # remove the quota
-  run docker exec mail /bin/sh -c "delquota quserapply@domain.tld"
+  run docker exec mail /bin/sh -c "delquota user1@localhost.localdomain"
   assert_success
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'quserapply@domain.tld'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain'"
   assert_output --partial "User quota STORAGE     0     -                         0"
-
-  run docker exec mail /bin/sh -c "delmailuser -y quserapply@domain.tld"
-  assert_success
 }
 
 @test "checking quota: quota removed when mailbox is removed" {
@@ -1094,30 +1087,6 @@ EOF
 
   run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quserremoved@domain.tld\:12M\$"'
   assert_failure
-}
-
-@test "checking quota: mail received when quota exceeded" {
-  run docker exec mail /bin/sh -c "addmailuser userquotafull@localhost.localdomain mypassword"
-  assert_success
-  sleep 20
-
-  # set a small quota
-  run docker exec mail /bin/sh -c "setquota userquotafull@localhost.localdomain 10k"
-  assert_output --partial "User quota STORAGE     0    10                         0"
-  assert_success
-
-  # send a big email
-  run  docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/quota-exceeded.txt"
-  assert_success
-  # wait analyze
-  sleep 10
-
-  # check for quota warn message existence
-  run docker exec mail grep "Subject: quota warning" /var/mail/localhost.localdomain/userquotafull/new/ -R
-  assert_success
-
-  run docker exec mail /bin/sh -c "delmailuser -y userquotafull@localhost.localdomain"
-  assert_success
 }
 
 #
