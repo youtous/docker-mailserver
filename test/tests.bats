@@ -1094,7 +1094,6 @@ EOF
   sleep 10
 
   # check for quota warn message existence
-  run  docker exec mail /bin/sh -c "grep Subject /var/mail/localhost.localdomain/userquotafull/new/"
   run docker exec mail grep "Subject: quota warning" /var/mail/localhost.localdomain/userquotafull/new/ -R
   assert_success
 
