@@ -1019,8 +1019,38 @@ EOF
 }
 
 @test "checking quota: dovecot quota present in postconf" {
-  run docker exec mail_smtponly /bin/bash -c "postconf | grep 'check_policy_service inet:localhost:65265'"
+  run docker exec mail /bin/bash -c "postconf | grep 'check_policy_service inet:localhost:65265'"
   assert_success
+}
+
+
+@test "checking quota: dovecot mailbox max size must equals postfix mailbox max size" {
+  postfix_mailbox_size=$(docker exec mail sh -c "postconf | grep -Po '(?<=virtual_mailbox_limit = )[0-9]+'")
+  run echo "$postfix_mailbox_size"
+  refute_output ""
+
+  postfix_mailbox_size_mb=$(($postfix_mailbox_size / 1000000))
+
+  dovecot_mailbox_size_mb=$(docker exec mail sh -c "doveconf | grep  -oP '(?<=quota_rule \= \*\:storage=)[0-9]+'")
+  run echo "$dovecot_mailbox_size"
+  refute_output ""
+
+  assert_equals "$postfix_mailbox_size_mb" "$dovecot_mailbox_size_mb"
+}
+
+
+@test "checking quota: dovecot message max size must equals postfix messsage max size" {
+  postfix_message_size=$(docker exec mail sh -c "postconf | grep -Po '(?<=message_size_limit = )[0-9]+'")
+  run echo "$postfix_message_size"
+  refute_output ""
+
+  postfix_message_size_mb=$(($postfix_message_size / 1000000))
+
+  dovecot_message_size_mb=$(docker exec mail sh -c "doveconf | grep  -oP '(?<=quota_max_mail_size = )[0-9]+'")
+  run echo "$dovecot_message_size_mb"
+  refute_output ""
+
+  assert_equals "$postfix_message_size_mb" "$dovecot_message_size_mb"
 }
 
 #
