@@ -1332,11 +1332,6 @@ EOF
   run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
   assert_success
 
-  run ./setup.sh -p ./test/quota/config quota del quota_user@example.com 26M
-  assert_failure
-  run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
-  assert_success
-
   run ./setup.sh -p ./test/quota/config quota del quota_user@example.com
   assert_success
   run grep "quota_user@example.com" ./test/alias/config/dovecot-quotas.cf
