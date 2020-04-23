@@ -18,12 +18,12 @@ errex() {
 
 [ -z "$USER" ] && { usage; errex "no username specified"; }
 expr index "$USER" "@" >/dev/null || { usage; errex "username must include the domain"; }
-if ! grep -E "^$USER\|" "$USER_DATABASE"; then
-  usage; errex "$USER does not exist"
+if ! grep -sE "^$USER\|" "$USER_DATABASE"; then
+  usage; errex "user $USER does not exist"
 fi
 
 # check quota
-if [ -n "$QUOTA" ] && ! echo "$QUOTA" | grep -E "^([0-9]+(B|k|M|G|T)|0)\$"; then
+if [ -n "$QUOTA" ] && ! echo "$QUOTA" | grep -sE "^([0-9]+(B|k|M|G|T)|0)\$"; then
   usage; errex "invalid quota format. e.g. 302M (B (byte), k (kilobyte), M (megabyte), G (gigabyte) or T (terabyte))"
 fi
 

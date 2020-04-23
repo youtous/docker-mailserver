@@ -1053,6 +1053,31 @@ EOF
   assert_equals "$postfix_message_size_mb" "$dovecot_message_size_mb"
 }
 
+@test "checking quota: dovecot apply user quota" {
+  run docker exec mail /bin/sh -c "addmailuser fresh_quota_user@domain.tld mypassword"
+  assert_success
+  sleep 5
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
+  assert_output "User quota STORAGE     0     -                         0"
+
+  # set a quota
+  run docker exec mail /bin/sh -c "setquota 50M fresh_quota_user@domain.tld"
+  assert_success
+  sleep 5
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
+  assert_output "User quota STORAGE     0 51200                         0"
+
+  # remove the quota
+  run docker exec mail /bin/sh -c "delquota fresh_quota_user@domain.tld"
+  assert_success
+  sleep 5
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
+  assert_output "User quota STORAGE     0     -                         0"
+
+  run docker exec mail /bin/sh -c "delmailuser -y fresh_quota_user@domain.tld"
+  assert_success
+}
+
 #
 # PERMIT_DOCKER mynetworks
 #
