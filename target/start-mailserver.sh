@@ -640,20 +640,20 @@ function _setup_dovecot_quota() {
       if [ -f /etc/dovecot/conf.d/90-quota.conf ]; then
         mv /etc/dovecot/conf.d/90-quota.conf /etc/dovecot/conf.d/90-quota.conf.disab
         sed -i "s/mail_plugins = \$mail_plugins quota/mail_plugins = \$mail_plugins/g" /etc/dovecot/conf.d/10-mail.conf
-        sed -i "s/    mail_plugins = \$mail_plugins imap_quota/    mail_plugins = \$mail_plugins/g" /etc/dovecot/conf.d/20-imap.conf
+        sed -i "s/mail_plugins = \$mail_plugins imap_quota/mail_plugins = \$mail_plugins/g" /etc/dovecot/conf.d/20-imap.conf
       fi
     else
       if [ -f /etc/dovecot/conf.d/90-quota.conf.disab ]; then
         mv /etc/dovecot/conf.d/90-quota.conf.disab /etc/dovecot/conf.d/90-quota.conf
         sed -i "s/mail_plugins = \$mail_plugins/mail_plugins = \$mail_plugins quota/g" /etc/dovecot/conf.d/10-mail.conf
-        sed -i "s/    mail_plugins = \$mail_plugin/    mail_plugins = \$mail_plugins imap_quota/g" /etc/dovecot/conf.d/20-imap.conf
+        sed -i "s/mail_plugins = \$mail_plugin/mail_plugins = \$mail_plugins imap_quota/g" /etc/dovecot/conf.d/20-imap.conf
       fi
 
-      message_size_limit_mb=$((DEFAULT_VARS["POSTFIX_MESSAGE_SIZE_LIMIT"] / 1000000))
-      mailbox_limit_mb=$((DEFAULT_VARS["POSTFIX_MAILBOX_SIZE_LIMIT"] / 1000000))
+      message_size_limit_mb=$(($POSTFIX_MESSAGE_SIZE_LIMIT / 1000000))
+      mailbox_limit_mb=$(($POSTFIX_MAILBOX_SIZE_LIMIT / 1000000))
 
-      sed -i "s/    quota_max_mail_size =.*/    quota_max_mail_size = ${message_size_limit_mb}$([ "$message_size_limit_mb" == 0 ] && echo "" || echo "M")/g" /etc/dovecot/conf.d/90-quota.conf
-      sed -i "s/    quota_rule = \*:storage=.*/    quota_rule = *:storage=${mailbox_limit_mb}$([ "$mailbox_limit_mb" == 0 ] && echo "" || echo "M")/g" /etc/dovecot/conf.d/90-quota.conf
+      sed -i "s/quota_max_mail_size =.*/quota_max_mail_size = ${message_size_limit_mb}$([ "$message_size_limit_mb" == 0 ] && echo "" || echo "M")/g" /etc/dovecot/conf.d/90-quota.conf
+      sed -i "s/quota_rule = \*:storage=.*/quota_rule = *:storage=${mailbox_limit_mb}$([ "$mailbox_limit_mb" == 0 ] && echo "" || echo "M")/g" /etc/dovecot/conf.d/90-quota.conf
 
       if [ ! -f /tmp/docker-mailserver/dovecot-quotas.cf ]; then
         notify 'inf' "'config/docker-mailserver/dovecot-quotas.cf' is not provided. Using default quotas."
