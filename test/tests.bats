@@ -1025,7 +1025,7 @@ EOF
 
 
 @test "checking quota: dovecot mailbox max size must equals postfix mailbox max size" {
-  postfix_mailbox_size=$(docker exec mail sh -c "postconf | grep -Po '(?<=virtual_mailbox_limit = )[0-9]+'")
+  postfix_mailbox_size=$(docker exec mail sh -c "postconf | grep -Po '(?<=mailbox_size_limit = )[0-9]+'")
   run echo "$postfix_mailbox_size"
   refute_output ""
 
