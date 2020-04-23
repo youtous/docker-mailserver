@@ -1319,8 +1319,8 @@ EOF
 @test "checking setup.sh: setup.sh delquota" {
   mkdir -p ./test/quota/config && echo "" > ./test/quota/config/dovecot-quotas.cf
 
-  run ./setup.sh -c mail email add quota_user@example.com test_password
-  run ./setup.sh -c mail email add quota_user2@example.com test_password
+  run ./setup.sh -p ./test/quota/config -c mail email add quota_user@example.com test_password
+  run ./setup.sh -p ./test/quota/config -c mail email add quota_user2@example.com test_password
 
   run ./setup.sh -p ./test/quota/config quota set quota_user@example.com 12M
   assert_success
