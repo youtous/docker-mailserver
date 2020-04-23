@@ -39,7 +39,7 @@ touch $DATABASE
   fi
 
   # check quota
-  if [ -n "$QUOTA" ] && ! echo "$QUOTA" | grep -E "^([0-9]+(B|k|M|G|T)|0)\$"; then
+  if [ -n "$QUOTA" ] && ! echo "$QUOTA" | grep -sE "^([0-9]+(B|k|M|G|T)|0)\$"; then
     usage; errex "invalid quota format. e.g. 302M (B (byte), k (kilobyte), M (megabyte), G (gigabyte) or T (terabyte))"
   fi
 
