@@ -1054,27 +1054,27 @@ EOF
 }
 
 @test "checking quota: dovecot apply user quota" {
-  run docker exec mail /bin/sh -c "addmailuser fresh_quota_user@domain.tld mypassword"
+  run docker exec mail /bin/sh -c "addmailuser quser@domain.tld mypassword"
   assert_success
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'quser@domain.tld'"
   assert_output --partial "User quota STORAGE     0     -                         0"
 
   # set a quota
-  run docker exec mail /bin/sh -c "setquota fresh_quota_user@domain.tld 50M"
+  run docker exec mail /bin/sh -c "setquota quser@domain.tld 50M"
   assert_success
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'quser@domain.tld'"
   assert_output --partial "User quota STORAGE     0 51200                         0"
 
   # remove the quota
-  run docker exec mail /bin/sh -c "delquota fresh_quota_user@domain.tld"
+  run docker exec mail /bin/sh -c "delquota quser@domain.tld"
   assert_success
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'fresh_quota_user@domain.tld'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'quser@domain.tld'"
   assert_output --partial "User quota STORAGE     0     -                         0"
 
-  run docker exec mail /bin/sh -c "delmailuser -y fresh_quota_user@domain.tld"
+  run docker exec mail /bin/sh -c "delmailuser -y quser@domain.tld"
   assert_success
 }
 
