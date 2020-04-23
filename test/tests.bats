@@ -1085,10 +1085,13 @@ EOF
   # set a small quota
   run docker exec mail /bin/sh -c "setquota 10K userquotafull@localhost.localdomain"
   assert_success
+  sleep 5
 
   # send a big email
   run  docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/quota-exceeded.txt"
   assert_success
+  # wait analyze
+  sleep 10
 
   # check for quota warn message existence
   run  docker exec mail /bin/sh -c "grep Subject /var/mail/localhost.localdomain/userquotafull/new/"
