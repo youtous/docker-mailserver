@@ -659,6 +659,12 @@ function _setup_dovecot_quota() {
         notify 'inf' "'config/docker-mailserver/dovecot-quotas.cf' is not provided. Using default quotas."
       fi
     fi
+
+    if [ "$SMTP_ONLY" = 1 ]; then
+      sed -i "s/check_policy_service inet:localhost:65265//g" /etc/postfix/main.cf
+    else
+      sed -i "s/reject_unknown_recipient_domain, reject_rbl_client zen.spamhaus.org/reject_unknown_recipient_domain, check_policy_service inet:localhost:65265, reject_rbl_client zen.spamhaus.org/g" /etc/postfix/main.cf
+    fi
 }
 
 function _setup_dovecot_local_user() {

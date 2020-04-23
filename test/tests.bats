@@ -1018,6 +1018,11 @@ EOF
     assert_success
 }
 
+@test "checking quota: dovecot quota present in postconf" {
+  run docker exec mail_smtponly /bin/bash -c "postconf | grep 'check_policy_service inet:localhost:65265'"
+  assert_success
+}
+
 #
 # PERMIT_DOCKER mynetworks
 #
