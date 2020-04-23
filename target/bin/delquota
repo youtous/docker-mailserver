@@ -20,7 +20,7 @@ escape() {
 
 [ -z "$USER" ]  && { usage; errex "No username specified"; }
 expr index "$USER" "@" >/dev/null || { usage; errex "username must include the domain"; }
-if ! grep -sE "^$USER\|" "$USER_DATABASE"; then
+if ! grep -qE "^$USER\|" "$USER_DATABASE"; then
   usage; errex "user $USER does not exist"
 fi
 [ -s "$DATABASE" ] || exit 0
