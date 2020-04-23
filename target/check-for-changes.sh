@@ -122,9 +122,12 @@ if [[ $chksum == *"FAIL"* ]]; then
 
 			user_attributes=""
 			# test if user has a defined quota
-			user_quota=($(grep "${user}@${domain}:" -i /tmp/docker-mailserver/dovecot-quotas.cf | tr ':' '\n'))
-			if [ ${#user_quota[@]} -eq 2 ]; then
-			  user_attributes="${user_attributes}userdb_quota_rule=*:bytes=${user_quota[1]}"
+			if [ -f /tmp/docker-mailserver/dovecot-quotas.cf ]; then
+			  user_quota=($(grep "${user}@${domain}:" -i /tmp/docker-mailserver/dovecot-quotas.cf | tr ':' '\n'))
+
+			  if [ ${#user_quota[@]} -eq 2 ]; then
+			    user_attributes="${user_attributes}userdb_quota_rule=*:bytes=${user_quota[1]}"
+			  fi
 			fi
 
 			# Let's go!
