@@ -1,6 +1,7 @@
 #! /bin/bash
 
 DATABASE=${DATABASE:-/tmp/docker-mailserver/dovecot-quotas.cf}
+USER_DATABASE=${USER_DATABASE:-/tmp/docker-mailserver/postfix-accounts.cf}
 
 USER="$1"
 
@@ -18,6 +19,10 @@ escape() {
 }
 
 [ -z "$USER" ]  && { usage; errex "No username specified"; }
+expr index "$USER" "@" >/dev/null || { usage; errex "username must include the domain"; }
+if ! grep -E "^$USER\|" "$USER_DATABASE"; then
+  usage; errex "$USER does not exist"
+fi
 [ -s "$DATABASE" ] || exit 0
 
 sed -i -e "/^$USER:.*$/d" $DATABASE

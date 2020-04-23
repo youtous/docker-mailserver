@@ -934,6 +934,90 @@ EOF
   [ ! -z "$output" ]
 }
 
+
+@test "checking quotas: user must be existing" {
+    run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
+    assert_success
+
+    run docker exec mail /bin/sh -c "setquota quota_user 50M"
+    assert_failure
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld 50M"
+    assert_success
+
+    run docker exec mail /bin/sh -c "setquota username@fulldomain 50M"
+    assert_failure
+
+    run docker exec mail /bin/sh -c "delmailuser -y quota_user@domain.tld"
+    assert_success
+}
+@test "checking quotas: quota must be well formatted | setquota" {
+    run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
+    assert_success
+
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld 26GIGOTS"
+    assert_failure
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld 123"
+    assert_failure
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld M"
+    assert_failure
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld -60M"
+    assert_failure
+
+
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld 10B"
+    assert_success
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld 10k"
+    assert_success
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld 10M"
+    assert_success
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld 10G"
+    assert_success
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld 10T"
+    assert_success
+
+
+    run docker exec mail /bin/sh -c "delmailuser -y quota_user@domain.tld"
+    assert_success
+}
+
+
+@test "checking quotas: user must be existing | delquota" {
+    run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
+    assert_success
+
+    run docker exec mail /bin/sh -c "delquota uota_user@domain.tld"
+    assert_failure
+    run docker exec mail /bin/sh -c "delquota quota_user"
+    assert_failure
+    run docker exec mail /bin/sh -c "delquota dontknowyou@domain.tld"
+    assert_failure
+
+    run docker exec mail /bin/sh -c "setquota quota_user@domain.tld 10T"
+    assert_success
+    run docker exec mail /bin/sh -c "delquota quota_user@domain.tld"
+    assert_success
+    run docker exec mail /bin/sh -c "grep -i 'quota_user@domain.tld' /tmp/docker-mailserver/dovecot-quotas.cf"
+    assert_failure
+
+    run docker exec mail /bin/sh -c "delmailuser -y quota_user@domain.tld"
+    assert_success
+}
+@test "checking quotas: allow delete when no quota for existing user | delquota" {
+    run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
+    assert_success
+
+    run docker exec mail /bin/sh -c "grep -i 'quota_user@domain.tld' /tmp/docker-mailserver/dovecot-quotas.cf"
+    assert_failure
+
+    run docker exec mail /bin/sh -c "delquota quota_user@domain.tld"
+    assert_success
+    run docker exec mail /bin/sh -c "delquota quota_user@domain.tld"
+    assert_success
+
+    run docker exec mail /bin/sh -c "delmailuser -y quota_user@domain.tld"
+    assert_success
+}
+
 #
 # PERMIT_DOCKER mynetworks
 #
@@ -1118,6 +1202,65 @@ EOF
   run grep "alias2@example.org" ./test/alias/config/postfix-virtual.cf
   assert_failure
 }
+
+# quota
+@test "checking setup.sh: setup.sh setquota" {
+  mkdir -p ./test/quota/config && echo "" > ./test/quota/config/dovecot-quotas.cf
+
+  run ./setup.sh -c mail email add quota_user@example.com test_password
+  run ./setup.sh -c mail email add quota_user2@example.com test_password
+
+  run ./setup.sh -p ./test/quota/config setquota quota_user@example.com 12M
+  assert_success
+  run ./setup.sh -p ./test/quota/config setquota 51M quota_user@example.com
+  assert_failure
+  run ./setup.sh -p ./test/quota/config setquota unknown@domain.com 150M
+  assert_failure
+
+  run ./setup.sh -p ./test/quota/config setquota quota_user2 51M
+  assert_failure
+
+  run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
+  assert_success
+
+  run ./setup.sh -p ./test/quota/config setquota quota_user@example.com 26M
+  assert_success
+  run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:26M\$" | wc -l | grep 1'
+  assert_success
+
+  run grep "quota_user2@example.com" ./test/alias/config/dovecot-quotas.cf
+  assert_failure
+}
+
+@test "checking setup.sh: setup.sh delquota" {
+  mkdir -p ./test/quota/config && echo "" > ./test/quota/config/dovecot-quotas.cf
+
+  run ./setup.sh -c mail email add quota_user@example.com test_password
+  run ./setup.sh -c mail email add quota_user2@example.com test_password
+
+  run ./setup.sh -p ./test/quota/config setquota quota_user@example.com 12M
+  assert_success
+  run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
+  assert_success
+
+
+  run ./setup.sh -p ./test/quota/config delquota unknown@domain.com
+  assert_failure
+  run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
+  assert_success
+
+  run ./setup.sh -p ./test/quota/config delquota quota_user@example.com 26M
+  assert_failure
+  run /bin/sh -c 'cat ./test/quota/config/dovecot-quotas.cf | grep -E "^quota_user@example.com\:12M\$" | wc -l | grep 1'
+  assert_success
+
+  run ./setup.sh -p ./test/quota/config delquota quota_user@example.com
+  assert_success
+  run grep "quota_user@example.com" ./test/alias/config/dovecot-quotas.cf
+  assert_failure
+}
+
+
 
 # config
 @test "checking setup.sh: setup.sh config dkim" {
