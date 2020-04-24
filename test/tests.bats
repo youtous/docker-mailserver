@@ -1,6 +1,6 @@
 load 'test_helper/bats-support/load'
 load 'test_helper/bats-assert/load'
-
+load 'test_helper/common'
 
 #
 # shared functions
@@ -1057,7 +1057,25 @@ EOF
   assert_equal "$postfix_message_size_mb" "$dovecot_message_size_mb"
 }
 
-@test "checking quota: dovecot apply user quota" {
+@test "checking quota: quota removed when mailbox is removed" {
+  run docker exec mail /bin/sh -c "addmailuser quserremoved@domain.tld mypassword"
+  assert_success
+
+  run docker exec mail /bin/sh -c "setquota quserremoved@domain.tld 12M"
+  assert_success
+
+  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quserremoved@domain.tld\:12M\$" | wc -l | grep 1'
+  assert_success
+
+  run docker exec mail /bin/sh -c "delmailuser -y quserremoved@domain.tld"
+  assert_success
+
+  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quserremoved@domain.tld\:12M\$"'
+  assert_failure
+}
+
+@test "checking quota: dovecot applies user quota" {
+  sleep 15 # wait until any change has finished
   run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain' | grep 'User quota STORAGE'"
   assert_output --partial "-                         0"
 
@@ -1076,7 +1094,9 @@ EOF
   [ "${originalChangesProcessed}" != "$(count_processed_changes mail)" ]
   assert_success
 
-  docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain' # without this instruction, test will fail
+  # let dovecot breath
+  sleep 5
+
   run docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain | grep "User quota STORAGE"'
   assert_output --partial '51200'
   assert_success
@@ -1097,46 +1117,46 @@ EOF
   assert_success
 
   # let dovecot breath
-  docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain' # without this instruction, test will fail
+  sleep 5
+
   run docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain | grep "User quota STORAGE"'
   assert_output --partial '-                         0'
   assert_success
 }
 
-@test "checking quota: quota removed when mailbox is removed" {
-  run docker exec mail /bin/sh -c "addmailuser quserremoved@domain.tld mypassword"
-  assert_success
-
-  run docker exec mail /bin/sh -c "setquota quserremoved@domain.tld 12M"
-  assert_success
-
-  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quserremoved@domain.tld\:12M\$" | wc -l | grep 1'
-  assert_success
-
-  run docker exec mail /bin/sh -c "delmailuser -y quserremoved@domain.tld"
-  assert_success
-
-  run docker exec mail /bin/sh -c 'cat /tmp/docker-mailserver/dovecot-quotas.cf | grep -E "^quserremoved@domain.tld\:12M\$"'
-  assert_failure
-}
-
 @test "checking quota: mail received when quota exceeded" {
-  # set a small quota
+  sleep 15 # wait until any change has finished
+  # wait until change detector has processed the change
+  originalChangesProcessed=$(count_processed_changes mail)
+
+    # set a quota
   run docker exec mail /bin/sh -c "setquota user2@otherdomain.tld 10k"
   assert_success
-  sleep 15
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'user2@otherdomain.tld' | grep 'User quota STORAGE'"
-  assert_output --partial "10"
+
+  count=0
+  while [ "${originalChangesProcessed}" = "$(count_processed_changes mail)" ]
+  do
+    ((count++)) && ((count==60)) && break
+    sleep 1
+  done
+  [ "${originalChangesProcessed}" != "$(count_processed_changes mail)" ]
   assert_success
 
-  # send a big email
+  # let dovecot breath
+  sleep 5
+
+  run docker exec mail /bin/sh -c 'doveadm quota get -u user2@otherdomain.tld | grep "User quota STORAGE"'
+  assert_output --partial '10'
+  assert_success
+
+  # send some big emails
+  run  docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/quota-exceeded.txt"
+  run  docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/quota-exceeded.txt"
   run  docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/quota-exceeded.txt"
   assert_success
-  # wait analyze
-  sleep 15
 
   # check for quota warn message existence
-  run docker exec mail grep "Subject: quota warning" /var/mail/otherdomain.tld/user2/new/ -R
+  run repeat_until_success_or_timeout 20 sh -c "docker exec mail sh -c 'grep \"Subject: quota warning\" /var/mail/otherdomain.tld/user2/new/ -R'"
   assert_success
 
   run docker exec mail /bin/sh -c "delquota user2@otherdomain.tld"
