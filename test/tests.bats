@@ -1062,20 +1062,45 @@ EOF
   assert_output --partial "-                         0"
 
   # set a quota
+  originalChangesProcessed=$(count_processed_changes mail)
   run docker exec mail /bin/sh -c "setquota user1@localhost.localdomain 50M"
   assert_success
-  sleep 15
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain' | grep 'User quota STORAGE'"
-  assert_output --partial "51200"
+  # wait until change detector has processed the change
+  count=0
+  while [ "${originalChangesProcessed}" = "$(count_processed_changes mail)" ]
+  do
+    ((count++)) && ((count==60)) && break
+    sleep 1
+  done
+  [ "${originalChangesProcessed}" != "$(count_processed_changes mail)" ]
+  assert_success
+
+  docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain' # without this instruction, test will fail
+  run docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain | grep "User quota STORAGE"'
+  assert_output --partial '51200'
+  assert_success
 
   # remove the quota
+  originalChangesProcessed=$(count_processed_changes mail)
   run docker exec mail /bin/sh -c "delquota user1@localhost.localdomain"
   assert_success
-  sleep 15
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain' | grep 'User quota STORAGE'"
-  assert_output --partial "-                         0"
+  # wait until change detector has processed the change
+  count=0
+  while [ "${originalChangesProcessed}" = "$(count_processed_changes mail)" ]
+  do
+    ((count++)) && ((count==60)) && break
+    sleep 1
+  done
+  [ "${originalChangesProcessed}" != "$(count_processed_changes mail)" ]
+  assert_success
+
+  # let dovecot breath
+  docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain' # without this instruction, test will fail
+  run docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain | grep "User quota STORAGE"'
+  assert_output --partial '-                         0'
+  assert_success
 }
 
 @test "checking quota: quota removed when mailbox is removed" {
