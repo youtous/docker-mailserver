@@ -635,7 +635,7 @@ function _setup_dovecot_quota() {
     notify 'task' 'Setting up Dovecot quota'
 
     if [ "$ENABLE_LDAP" = 1 ]; then
-      notify 'inf' "Dovecot quota are not implemented with LDAP."
+      notify 'inf' "Dovecot quota is not implemented with LDAP."
 
       if [ -f /etc/dovecot/conf.d/90-quota.conf ]; then
         mv /etc/dovecot/conf.d/90-quota.conf /etc/dovecot/conf.d/90-quota.conf.disab
@@ -657,6 +657,7 @@ function _setup_dovecot_quota() {
 
       if [ ! -f /tmp/docker-mailserver/dovecot-quotas.cf ]; then
         notify 'inf' "'config/docker-mailserver/dovecot-quotas.cf' is not provided. Using default quotas."
+		    echo -n >/tmp/docker-mailserver/dovecot-quotas.cf
       fi
     fi
 
