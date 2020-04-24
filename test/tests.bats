@@ -1058,21 +1058,23 @@ EOF
 }
 
 @test "checking quota: dovecot apply user quota" {
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain' | grep 'User quota STORAGE'"
   assert_output --partial "-                         0"
 
   # set a quota
   run docker exec mail /bin/sh -c "setquota user1@localhost.localdomain 50M"
   assert_success
+  sleep 15
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain' | grep 'User quota STORAGE'"
   assert_output --partial "51200"
 
   # remove the quota
   run docker exec mail /bin/sh -c "delquota user1@localhost.localdomain"
   assert_success
+  sleep 15
 
-  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain'"
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'user1@localhost.localdomain' | grep 'User quota STORAGE'"
   assert_output --partial "-                         0"
 }
 
