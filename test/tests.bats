@@ -935,7 +935,7 @@ EOF
 }
 
 
-@test "checking quotas: user must be existing" {
+@test "checking quota: setquota user must be existing" {
     run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
     assert_success
 
@@ -950,7 +950,7 @@ EOF
     run docker exec mail /bin/sh -c "delmailuser -y quota_user@domain.tld"
     assert_success
 }
-@test "checking quotas: setquota <quota> must be well formatted" {
+@test "checking quota: setquota <quota> must be well formatted" {
     run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
     assert_success
 
@@ -981,7 +981,7 @@ EOF
 }
 
 
-@test "checking quotas: delquota user must be existing" {
+@test "checking quota: delquota user must be existing" {
     run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
     assert_success
 
@@ -1002,7 +1002,7 @@ EOF
     run docker exec mail /bin/sh -c "delmailuser -y quota_user@domain.tld"
     assert_success
 }
-@test "checking quotas: delquota allow when no quota for existing user" {
+@test "checking quota: delquota allow when no quota for existing user" {
     run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
     assert_success
 
