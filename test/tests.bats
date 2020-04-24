@@ -1095,6 +1095,29 @@ EOF
   assert_failure
 }
 
+@test "checking quota: mail received when quota exceeded" {
+  # set a small quota
+  run docker exec mail /bin/sh -c "setquota user2@otherdomain.tld 10k"
+  assert_success
+  sleep 15
+  run docker exec mail /bin/sh -c "doveadm quota get -u 'user2@otherdomain.tld' | grep 'User quota STORAGE'"
+  assert_output --partial "10"
+  assert_success
+
+  # send a big email
+  run  docker exec mail /bin/sh -c "nc 0.0.0.0 25 < /tmp/docker-mailserver-test/email-templates/quota-exceeded.txt"
+  assert_success
+  # wait analyze
+  sleep 15
+
+  # check for quota warn message existence
+  run docker exec mail grep "Subject: quota warning" /var/mail/otherdomain.tld/user2/new/ -R
+  assert_success
+
+  run docker exec mail /bin/sh -c "delquota user2@otherdomain.tld"
+  assert_success
+}
+
 #
 # PERMIT_DOCKER mynetworks
 #
