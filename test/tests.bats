@@ -950,7 +950,7 @@ EOF
     run docker exec mail /bin/sh -c "delmailuser -y quota_user@domain.tld"
     assert_success
 }
-@test "checking quotas: quota must be well formatted | setquota" {
+@test "checking quotas: setquota <quota> must be well formatted" {
     run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
     assert_success
 
@@ -981,7 +981,7 @@ EOF
 }
 
 
-@test "checking quotas: user must be existing | delquota" {
+@test "checking quotas: delquota user must be existing" {
     run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
     assert_success
 
@@ -1002,7 +1002,7 @@ EOF
     run docker exec mail /bin/sh -c "delmailuser -y quota_user@domain.tld"
     assert_success
 }
-@test "checking quotas: allow delete when no quota for existing user | delquota" {
+@test "checking quotas: delquota allow when no quota for existing user" {
     run docker exec mail /bin/sh -c "addmailuser quota_user@domain.tld mypassword"
     assert_success
 
@@ -1024,7 +1024,7 @@ EOF
 }
 
 
-@test "checking quota: dovecot mailbox max size must equals postfix mailbox max size" {
+@test "checking quota: dovecot mailbox max size must be equal to postfix mailbox max size" {
   postfix_mailbox_size=$(docker exec mail sh -c "postconf | grep -Po '(?<=mailbox_size_limit = )[0-9]+'")
   run echo "$postfix_mailbox_size"
   refute_output ""
@@ -1043,7 +1043,7 @@ EOF
 }
 
 
-@test "checking quota: dovecot message max size must equals postfix messsage max size" {
+@test "checking quota: dovecot message max size must be equal to postfix messsage max size" {
   postfix_message_size=$(docker exec mail sh -c "postconf | grep -Po '(?<=message_size_limit = )[0-9]+'")
   run echo "$postfix_message_size"
   refute_output ""
@@ -1057,7 +1057,7 @@ EOF
   assert_equal "$postfix_message_size_mb" "$dovecot_message_size_mb"
 }
 
-@test "checking quota: quota removed when mailbox is removed" {
+@test "checking quota: quota directive is removed when mailbox is removed" {
   run docker exec mail /bin/sh -c "addmailuser quserremoved@domain.tld mypassword"
   assert_success
 
@@ -1094,7 +1094,7 @@ EOF
   [ "${originalChangesProcessed}" != "$(count_processed_changes mail)" ]
   assert_success
 
-  # let dovecot breath
+  # let dovecot breathe
   sleep 5
 
   run docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain | grep "User quota STORAGE"'
@@ -1116,7 +1116,7 @@ EOF
   [ "${originalChangesProcessed}" != "$(count_processed_changes mail)" ]
   assert_success
 
-  # let dovecot breath
+  # let dovecot breathe
   sleep 5
 
   run docker exec mail /bin/sh -c 'doveadm quota get -u user1@localhost.localdomain | grep "User quota STORAGE"'
@@ -1124,7 +1124,7 @@ EOF
   assert_success
 }
 
-@test "checking quota: mail received when quota exceeded" {
+@test "checking quota: warn message received when quota exceeded" {
   sleep 15 # wait until any change has finished
   # wait until change detector has processed the change
   originalChangesProcessed=$(count_processed_changes mail)
@@ -1142,7 +1142,7 @@ EOF
   [ "${originalChangesProcessed}" != "$(count_processed_changes mail)" ]
   assert_success
 
-  # let dovecot breath
+  # let dovecot breathe
   sleep 5
 
   run docker exec mail /bin/sh -c 'doveadm quota get -u user2@otherdomain.tld | grep "User quota STORAGE"'
@@ -1158,6 +1158,11 @@ EOF
   # check for quota warn message existence
   run repeat_until_success_or_timeout 20 sh -c "docker exec mail sh -c 'grep \"Subject: quota warning\" /var/mail/otherdomain.tld/user2/new/ -R'"
   assert_success
+
+  # ensure only the first big message and the warn message are present (other messages are rejected: mailbox is full)
+  run docker exec mail sh -c 'ls /var/mail/otherdomain.tld/user2/new/ | wc -l'
+  assert_success
+  assert_output "2"
 
   run docker exec mail /bin/sh -c "delquota user2@otherdomain.tld"
   assert_success
